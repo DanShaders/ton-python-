@@ -1,0 +1,34 @@
+[project]
+name = "network-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "crc16>=0.1.1",
+    "pydantic>=2.11.7",
+    "pytonlib>=0.0.65",
+    "requests>=2.27.1",
+    "setuptools>=80.9.0<81", # FIXME: We should really fix pytonlib instead of doing this.
+    "textual>=3.5.0",
+    "tvm-valuetypes==0.0.12",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.32.1",
+    "ruff>=0.14.2",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = [
+    # This disallows to use `l` and `O` as variable names because "they can be confused with `1` and
+    # `0`". My response will be use a proper font that makes them distinguishable.
+    "E741",
+]
+
+[tool.ruff.format]
+exclude = ["tonapi.py", "tonlibapi.py"]
