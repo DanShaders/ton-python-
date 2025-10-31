@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass
 from enum import IntEnum, auto
@@ -40,7 +41,7 @@ def _write_model(file: Path, model: BaseModel):
 
 @final
 class Network:
-    class Node:
+    class Node(ABC):
         name: str
 
         _network: "Network"
@@ -125,6 +126,10 @@ class Network:
 
         def announce_to(self, dht: "DHTNode"):
             self._static_nodes.append(dht)
+
+        @abstractmethod
+        async def run(self):
+            pass
 
         async def stop(self):
             if self.__process:
@@ -279,6 +284,7 @@ class DHTNode(Network.Node):
     def signed_address(self):
         return self._signed_address
 
+    @override
     async def run(self):
         await self._run(self._install.dht_server_exe, self._local_config, None, [])
 
@@ -356,6 +362,7 @@ class FullNode(Network.Node):
     def validator_key(self):
         return self._validator_key
 
+    @override
     async def run(self):
         zerostate = self._get_or_generate_zerostate()
 
