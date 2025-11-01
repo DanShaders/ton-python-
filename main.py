@@ -27,12 +27,16 @@ async def main() -> None:
     async with Network(install, working_dir) as network:
         dht = network.create_dht_node()
 
-        node = network.create_full_node()
-        node.make_initial_validator()
-        node.announce_to(dht)
+        nodes: list[Network.Node] = []
+        for _ in range(4):
+            node = network.create_full_node()
+            node.make_initial_validator()
+            node.announce_to(dht)
+            nodes.append(node)
 
         await dht.run()
-        await node.run()
+        for node in nodes:
+            await node.run()
 
         await network.wait_mc_block(seqno=1)
 
