@@ -8,7 +8,7 @@ from src.network import Network
 
 
 async def main() -> None:
-    working_dir = Path("/home/danklishch/code/ton/network2")
+    working_dir = Path(".network")
     shutil.rmtree(working_dir, ignore_errors=True)
     working_dir.mkdir(exist_ok=True)
 
