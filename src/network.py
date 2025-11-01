@@ -14,8 +14,11 @@ from typing import final, override
 
 from pytonlib import TonlibClient, TonlibError
 from pydantic import BaseModel
+
 import tonapi
 import tonlibapi
+
+from .wallet import ExternalMessage, SimpleWallet
 from .install import Install
 from .zerostate import NetworkConfig, Zerostate, create_zerostate
 from .key import Key
@@ -79,9 +82,6 @@ class Network:
 
         def _ensure_no_zerostate_yet(self):
             assert self._network._status < _Status.ZEROSTATE_GENERATED
-
-        def _get_or_generate_zerostate(self):
-            return self._network._get_or_generate_zerostate()
 
         async def _run(
             self,
@@ -173,6 +173,7 @@ class Network:
         self._directory = directory.absolute()
         self._port = 2000
         self._node_idx = 0
+        self._wallet_idx = 0
         self._status = _Status.INITED
 
         self.__nodes: list["Network.Node"] = []
@@ -195,7 +196,8 @@ class Network:
         self.__full_nodes.append(node)
         return node
 
-    def _get_or_generate_zerostate(self) -> Zerostate:
+    @property
+    def zerostate(self) -> Zerostate:
         if self.__zerostate is not None:
             return self.__zerostate
 
@@ -264,6 +266,19 @@ class Network:
                 break
             else:
                 time.sleep(0.2)
+
+    async def send_external_message(self, message: ExternalMessage):
+        await self.__full_nodes[0].send_external(message)
+
+    def create_wallet(self, workchain: int):
+        idx = self._wallet_idx
+        self._wallet_idx += 1
+
+        return SimpleWallet.create(
+            self._install,
+            self._directory / f"wallet-{idx}",
+            workchain,
+        )
 
 
 @final
@@ -391,7 +406,7 @@ class FullNode(Network.Node):
 
     @override
     async def run(self):
-        zerostate = self._get_or_generate_zerostate()
+        zerostate = self._network.zerostate
 
         static_dir = self._directory / "static"
         static_dir.mkdir()
@@ -417,7 +432,7 @@ class FullNode(Network.Node):
                     port=self._liteserver_addr.port,
                 ),
             ],
-            validator=self._get_or_generate_zerostate().as_validator_config(),
+            validator=self._network.zerostate.as_validator_config(),
         )
 
         keystore_dir = self._directory / "lc-keystore"
@@ -433,6 +448,32 @@ class FullNode(Network.Node):
         await self._client.init()
 
         return self._client
+
+    async def send_external(self, message: ExternalMessage):
+        client = await self.tonlib_client()
+
+        while True:
+            try:
+                await client.raw_send_message(message.boc)
+            except TonlibError as e:
+                # FIXME: We should really let node notify us that it is ready.
+                try:
+                    if (
+                        e.result["code"] == 500
+                        and (
+                            e.result["message"]
+                            == "LITE_SERVER_NETWORKtimeout for adnl query query"  # node is not synced yet
+                            or e.result["message"]
+                            == "LITE_SERVER_NETWORK"  # node is not listening the socket
+                        )
+                    ):
+                        time.sleep(0.2)
+                        continue
+                except Exception:
+                    pass
+                raise
+            # FIXME: Return something indicating whether the message was accepted.
+            break
 
     @override
     async def stop(self):

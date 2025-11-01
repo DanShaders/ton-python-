@@ -4,8 +4,9 @@ from pathlib import Path
 
 import tonapi
 
+from .wallet import SimpleWallet
 from .key import Key
-from .install import Install, run_fift
+from .install import Install, run_fift_create_state
 
 
 def _shard_json_repr(shard: int):
@@ -34,6 +35,7 @@ class WorkchainState:
 class Zerostate:
     masterchain: WorkchainState
     shardchain: WorkchainState
+    main_wallet: SimpleWallet
 
     def as_block(self):
         return tonapi.tonNode_blockIdExt(
@@ -298,7 +300,7 @@ def create_zerostate(
     for key in validator_keys:
         keys.append(f"B{{{key.public_key.key.hex()}}} 17 add-validator")
 
-    run_fift(
+    run_fift_create_state(
         install,
         _TEMPLATE.format(
             monitor_min_split=config.monitor_min_split,
@@ -323,4 +325,5 @@ def create_zerostate(
             file_hash=(state_dir / "basestate0.fhash").read_bytes(),
             root_hash=(state_dir / "basestate0.rhash").read_bytes(),
         ),
+        main_wallet=SimpleWallet.from_path(install, state_dir / "main-wallet", 0),
     )

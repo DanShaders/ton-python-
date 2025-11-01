@@ -5,6 +5,7 @@ import shutil
 
 from src.install import Install
 from src.network import Network
+from src.wallet import ton
 
 
 async def main() -> None:
@@ -34,6 +35,13 @@ async def main() -> None:
         await node.run()
 
         await network.wait_mc_block(seqno=1)
+
+        wallet, wallet_init = network.create_wallet(0)
+        tx = network.zerostate.main_wallet.send(wallet.address.non_bounceable, ton("2"))
+        await network.send_external_message(tx)
+        await asyncio.sleep(30)
+        await network.send_external_message(wallet_init)
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":
