@@ -1,1 +1,1 @@
-from .tlobject import TLObject, parse_tl
+from .tlobject import ParsedTLObject, parse_tl

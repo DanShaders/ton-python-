@@ -5,8 +5,8 @@ import zlib
 from ...utils import snake_to_camel_case
 
 
-class TLObject:
-    def __init__(self, fullname, object_id, args, result, is_function):
+class ParsedTLObject:
+    def __init__(self, fullname: str, object_id: str, args, result, is_function):
         """
         Initializes a new TLObject, given its properties.
 
@@ -22,7 +22,7 @@ class TLObject:
         if '.' in fullname:
             self.namespace, self.name = fullname.split('.', maxsplit=1)
         else:
-            self.namespace, self.name = None, fullname
+            self.namespace, self.name = '', fullname
 
         self.name = self.name.replace('.', '_')
 

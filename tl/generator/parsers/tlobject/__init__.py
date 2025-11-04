@@ -1,3 +1,3 @@
 from .tlarg import TLArg
-from .tlobject import TLObject
+from .parsedtlobject import ParsedTLObject
 from .parser import parse_tl

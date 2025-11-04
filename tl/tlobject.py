@@ -1,6 +1,7 @@
 import base64
 import json
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Dict, List, Type, TypeVar
+from tl.binary_reader import BinaryReader
 
 
 def _json_default(value):
@@ -152,6 +153,7 @@ class TLObject:
         else:
             return json.dumps(d, default=default, **kwargs)
 
+    @classmethod
     def from_dict(self, d: dict):
         raise NotImplementedError
 
@@ -159,17 +161,9 @@ class TLObject:
         raise NotImplementedError
 
     @classmethod
-    def from_reader(cls, reader):
+    def from_reader(cls, reader: BinaryReader):
         raise NotImplementedError
 
 
 class TLRequest(TLObject):
-    """
-    Represents a content-related `TLObject` (a request that can be sent).
-    """
-    @staticmethod
-    def read_result(reader):
-        return reader.tgread_object()
-
-    async def resolve(self, client, utils):
-        pass
+    pass

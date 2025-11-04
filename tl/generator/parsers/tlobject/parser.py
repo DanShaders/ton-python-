@@ -2,7 +2,7 @@ import collections
 import re
 
 from .tlarg import TLArg
-from .tlobject import TLObject
+from .parsedtlobject import ParsedTLObject
 
 
 CORE_TYPES = {
@@ -48,7 +48,7 @@ def _from_line(line, is_function):
 
     name = match.group(1)
 
-    return TLObject(
+    return ParsedTLObject(
         fullname=name,
         object_id=match.group(2),
         result=match.group(3),
