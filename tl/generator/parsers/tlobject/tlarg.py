@@ -62,6 +62,8 @@ class TLArg:
             # help.configSpecial
             if self.type.split('.')[-1][0].islower():
                 self.skip_constructor_id = True
+        # if self.type in ('Int128' or 'Int256'):
+        #     self.type = 'bytes'
 
         self.generic_definition = generic_definition
 
@@ -69,24 +71,64 @@ class TLArg:
         cls = self.type
         if '.' in cls:
             # cls = cls.split('.')[-1]
-            cls = snake_to_camel_case('_'.join(cls.split('.')[1:]))
+            # cls = snake_to_camel_case('_'.join(cls.split('.')[1:]))
+            cls = snake_to_camel_case('_'.join(cls.split('.')))
         result = {
             'int': 'int',
             'long': 'int',
-            'int128': 'int',
-            'int256': 'int',
+            'int64': 'int',
+            'int32': 'int',
+            'int53': 'int',
+            'int128': 'Union[bytes, str]',
+            'int256': 'Union[bytes, str]',
             'double': 'float',
             'string': 'str',
-            'bytes': 'bytes',
+            'bytes': 'Union[bytes, str]',
             'Bool': 'bool',
             'true': 'bool',
-        }.get(cls, "'Type{}'".format(cls))
+        }.get(cls)
+        if result is None:
+            # result = f"Optional['Type{cls}']"
+            if self.skip_constructor_id:
+                cls = snake_to_camel_case(cls)
+                result = f"Optional['{cls}']"
+            else:
+                result = f"Optional['Type{cls}']"
         if self.is_vector:
-            result = 'List[{}]'.format(result)
-        if self.flag and cls != 'date':
+            result = 'list[{}]'.format(result)
+        if self.flag:
             result = 'Optional[{}]'.format(result)
 
         return result
+
+    def get_init_arg(self, value: str) -> str:
+        if self.type in ('int128', 'int256', 'bytes'):
+            if not self.is_vector:
+                t = 'bytes' if not self.flag else 'Optional[bytes]'
+                return f'self.{self.name}: {t} = base64.b64decode({value}) if isinstance({value}, str) else {value}'
+            else:
+                t = 'typing.List[bytes]' if not self.flag else 'Optional[typing.List[bytes]]'
+                return f'self.{self.name}: {t} = [base64.b64decode(x) if isinstance(x, str) else x for x in {value}]'
+        else:
+            return f'self.{self.name}: {self.type_hint()} = {value}'
+
+    def default_value(self):
+        if self.is_vector:
+            return "[]"
+        elif self.type in ('int', 'long', 'int64', 'int32', 'int53'):
+            return "0"
+        elif self.type in ('bytes', 'int128', 'int256'):
+            return "b''"
+        elif self.type == 'string':
+            return "''"
+        elif self.type == 'double':
+            return "0.0"
+        elif self.type == 'Bool':
+            return "False"
+        elif self.type == 'true':
+            return "True"
+        else:
+            return "None"
 
     def real_type(self):
         # Find the real type representation by updating it as required

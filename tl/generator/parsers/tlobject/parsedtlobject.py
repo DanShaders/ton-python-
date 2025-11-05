@@ -20,7 +20,8 @@ class ParsedTLObject:
         # The name can or not have a namespace
         self.fullname = fullname
         if '.' in fullname:
-            self.namespace, self.name = fullname.split('.', maxsplit=1)
+            # self.namespace, self.name = fullname.split('.', maxsplit=1)
+            self.namespace, self.name = fullname.split('.')[0], fullname
         else:
             self.namespace, self.name = '', fullname
 

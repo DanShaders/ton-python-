@@ -1,11 +1,15 @@
 import struct
+import typing
 
-from tl.tlobject import TLObject
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from tl.tlobject import TLObject
 
 
 class BinaryReader:
 
-    def __init__(self, data: bytes, tl_objects: dict[int, TLObject]):
+    def __init__(self, data: bytes, tl_objects: dict[int, 'TLObject']):
         self.stream = data or b''
         self.position = 0
         self._last = None  # Should come in handy to spot -404 errors
@@ -43,6 +47,9 @@ class BinaryReader:
         """Reads a n-bits long integer value."""
         return int.from_bytes(
             self.read(bits // 8), byteorder='little', signed=signed)
+
+    def read_bytes(self, length: int):
+        return self.read(length)[::-1]
 
     def read(self, length=-1):
         """Read the given amount of bytes, or -1 to read all remaining."""
@@ -100,7 +107,7 @@ class BinaryReader:
         else:
             raise RuntimeError('Invalid boolean code {}'.format(hex(value)))
 
-    def tgread_object(self):
+    def tgread_object(self) -> typing.Any:
         """Reads a TL object."""
         constructor_id = self.read_int(signed=False)
         class_ = self.tl_objects.get(constructor_id, None)

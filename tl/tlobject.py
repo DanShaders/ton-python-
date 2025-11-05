@@ -1,7 +1,8 @@
 import base64
 import json
-from typing import Dict, List, Type, TypeVar
-from tl.binary_reader import BinaryReader
+from typing import Dict, List, Type, TypeVar, TYPE_CHECKING
+if TYPE_CHECKING:
+    from tl.binary_reader import BinaryReader
 
 
 def _json_default(value):
@@ -154,14 +155,18 @@ class TLObject:
             return json.dumps(d, default=default, **kwargs)
 
     @classmethod
-    def from_dict(self, d: dict):
+    def from_dict(cls, d: dict):
         raise NotImplementedError
+
+    @classmethod
+    def from_json(cls, source: str):
+        return cls.from_dict(json.loads(source))
 
     def to_bytes(self):
         raise NotImplementedError
 
     @classmethod
-    def from_reader(cls, reader: BinaryReader):
+    def from_reader(cls, reader: 'BinaryReader'):
         raise NotImplementedError
 
 
