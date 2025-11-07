@@ -1,12 +1,14 @@
 import re
 import struct
 import zlib
+from typing import cast, override
 
-from ...utils import snake_to_camel_case
+from .tlarg import TLArg
+from ...utils import get_class_name
 
 
 class ParsedTLObject:
-    def __init__(self, fullname: str, object_id: str, args, result, is_function):
+    def __init__(self, fullname: str, object_id: str | None, args: list[TLArg], result: str, is_function: bool):
         """
         Initializes a new TLObject, given its properties.
 
@@ -18,7 +20,9 @@ class ParsedTLObject:
         :param is_function: Is the object a function or a type?
         """
         # The name can or not have a namespace
-        self.fullname = fullname
+        self.fullname: str = fullname
+        self.namespace: str
+        self.name: str
         if '.' in fullname:
             # self.namespace, self.name = fullname.split('.', maxsplit=1)
             self.namespace, self.name = fullname.split('.')[0], fullname
@@ -27,19 +31,19 @@ class ParsedTLObject:
 
         self.name = self.name.replace('.', '_')
 
-        self.args = args
-        self.result = result
-        self.is_function = is_function
-        self.id = None
+        self.args: list[TLArg] = args
+        self.result: str = result
+        self.is_function: bool = is_function
+        self.id: int
         if object_id is None:
             self.id = self.infer_id()
         else:
             self.id = int(object_id, base=16)
 
-        self.class_name = snake_to_camel_case(
-            self.name, suffix='Request' if self.is_function else '')
+        # self.class_name: str = snake_to_camel_case(self.name, suffix='Request' if self.is_function else '')
+        self.class_name: str = get_class_name(self.name, suffix='Request' if self.is_function else '')
 
-        self.real_args = list(a for a in self.sorted_args() if not
+        self.real_args: list[TLArg] = list(a for a in self.sorted_args() if not
                               # (a.flag_indicator or a.generic_definition))
                                 a.generic_definition)
 
@@ -51,8 +55,9 @@ class ParsedTLObject:
         return sorted(self.args,
                       key=lambda x: bool(x.flag))
 
-    def __repr__(self, ignore_id=False):
-        if self.id is None or ignore_id:
+    @override
+    def __repr__(self, ignore_id: bool = False):
+        if ignore_id:
             hex_id = ''
         else:
             hex_id = '#{:08x}'.format(self.id)
@@ -67,10 +72,9 @@ class ParsedTLObject:
     def infer_id(self):
         representation = self.__repr__(ignore_id=True)
         representation = representation\
-            .replace(':bytes ', ':string ')\
-            .replace('?bytes ', '?string ')\
             .replace('<', ' ').replace('>', '')\
-            .replace('{', '').replace('}', '')
+            .replace('{', '').replace('}', '')\
+            .replace('Vector', 'vector')
 
         # Remove optional empty values (special-cased to the true type)
         representation = re.sub(
@@ -81,9 +85,10 @@ class ParsedTLObject:
         return zlib.crc32(representation.encode('ascii'))
 
     def to_dict(self):
+        id_: str = cast(str, struct.unpack('i', struct.pack('I', self.id))[0])
         return {
             'id':
-                str(struct.unpack('i', struct.pack('I', self.id))[0]),
+                str(id_),
             'method' if self.is_function else 'predicate':
                 self.fullname,
             'params':

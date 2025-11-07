@@ -1,1 +1,6 @@
-from .tlobject import generate_tlobjects, clean_tlobjects
+from .tlobject import generate_tlobjects
+
+
+__all__ = [
+    "generate_tlobjects",
+]

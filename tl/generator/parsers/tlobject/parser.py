@@ -1,5 +1,6 @@
 import collections
 import re
+from pathlib import Path
 
 from .tlarg import TLArg
 from .parsedtlobject import ParsedTLObject
@@ -14,27 +15,27 @@ CORE_TYPES = {
 }
 
 
-def _from_line(line, is_function):
+def _from_line(line: str, is_function: bool) -> ParsedTLObject:
     match = re.match(
-        r'^([\w.]+)'  # 'name'
-        r'(?:#([0-9a-fA-F]+))?'  # '#optionalcode'
+        r'^([\w.]+)' +  # 'name'
+        r'(?:#([0-9a-fA-F]+))?' +  # '#optionalcode'
         # r'(?:\s{?\w+:(?:\([^)]*\)|[\w\d<>#.?!()]+)}?)*'
-        r'.*?'
-        r'\s=\s'  # ' = '
+        r'.*?' +
+        r'\s=\s' +  # ' = '
         r'([\w\d<>#.?]+);$',  # '<result.type>;'
         line
     )
     if match is None:
         raise ValueError('Cannot parse TLObject {}'.format(line))
 
-    args_match = re.findall(
-        r'({)?'
-        r'(\w+)'
-        r':'
+    args_match: list[tuple[str, str, str]] = re.findall(
+        r'({)?' +
+        r'(\w+)' +
+        r':' +
         # r'([\w\d<>#.?!]+)',
-        r'('
+        r'(' +
         # r'(?:\([^)]*\)|[\w\d<>#.?!]+)'
-        r'(?:[\w\d<>#.?!]+(?:\([^)]*\))?|\([^)]*\))'
+        r'(?:[\w\d<>#.?!]+(?:\([^)]*\))?|\([^)]*\))' +
         r')',
         line
     )
@@ -58,16 +59,16 @@ def _from_line(line, is_function):
     )
 
 
-def parse_tl(file_path, ignored_ids=CORE_TYPES):
+def parse_tl(file_path: Path, ignored_ids: set[int] = CORE_TYPES) -> list[ParsedTLObject]:
     """
     This method yields TLObjects from a given .tl file.
 
     Note that the file is parsed completely before the function yields
     because references to other objects may appear later in the file.
     """
-    obj_all = []
+    obj_all: list[ParsedTLObject] = []
     obj_by_name = {}
-    obj_by_type = collections.defaultdict(list)
+    obj_by_type: dict[str, list[ParsedTLObject]] = collections.defaultdict(list)
     with file_path.open() as file:
         incomplete = ''
         is_function = False
@@ -109,16 +110,16 @@ def parse_tl(file_path, ignored_ids=CORE_TYPES):
 
     # Once all objects have been parsed, replace the
     # string type from the arguments with references
-    for obj in obj_all:
-        for arg in obj.args:
-            arg.cls = obj_by_type.get(arg.type) or (
-                [obj_by_name[arg.type]] if arg.type in obj_by_name else []
-            )
+    # for obj in obj_all:
+    #     for arg in obj.args:
+    #         arg.cls = obj_by_type.get(arg.type) or (
+    #             [obj_by_name[arg.type]] if arg.type in obj_by_name else []
+    #         )
 
     return obj_all
 
 
-def find_layer(file_path):
+def find_layer(file_path: Path):
     """Finds the layer used on the specified scheme.tl file."""
     layer_regex = re.compile(r'^//\s*LAYER\s*(\d+)$')
     with file_path.open('r') as file:
