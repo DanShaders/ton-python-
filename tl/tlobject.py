@@ -3,6 +3,7 @@ import json
 import typing
 import struct
 from typing import override, Self, cast, Any, Callable, TextIO
+from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
 
@@ -129,11 +130,11 @@ class TLRequest(TLObject, ABC):
 
 class BinaryReader:
 
-    def __init__(self, data: bytes, tl_objects: dict[int, 'TLObject']):
+    def __init__(self, data: bytes, tl_objects: Mapping[int, type[TLObject]]):
         self.stream: bytes = data or b''
         self.position: int = 0
         self._last: bytes | None = None  # Should come in handy to spot -404 errors
-        self.tl_objects: dict[int, 'TLObject'] = tl_objects
+        self.tl_objects: Mapping[int, type[TLObject]] = tl_objects
 
     # "All numbers are written as little endian."
     # https://core.telegram.org/mtproto

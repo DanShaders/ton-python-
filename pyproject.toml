@@ -12,6 +12,7 @@ dependencies = [
     "setuptools>=80.9.0<81", # FIXME: We should really fix pytonlib instead of doing this.
     "textual>=3.5.0",
     "tvm-valuetypes==0.0.12",
+    "pytest"
 ]
 
 [dependency-groups]
